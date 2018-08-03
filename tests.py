@@ -114,7 +114,7 @@ class TdtTest(unittest.TestCase):
         self.assertEqual(resultTable._rows[1][1],"content col2")
 
     def test_sortingTodosByProperies(self):
-        sorted_list = helpers.sortTodos(todo_list,'createDate')
+        sorted_list = helpers.sortTodos(todo_list,'createDate','blagurk','humbug')
         def createDatefromString(datestring):
             dateList = datestring.split("-")
             return datetime.date(int(dateList[0]), int(dateList[1]), int(dateList[2]))

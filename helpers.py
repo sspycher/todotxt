@@ -179,8 +179,6 @@ def writeMenu_list(todo_list):
         except IndexError:
             log.warning('invalid input, setting to 0 (today)')
             days = 0
-        # the old, static way of building a table
-        # resultTable(resolvedWithinDays(days))
 
         # testing building the same with tableobj
         table_content = tdt.addedWithinDays(days,todo_list)
@@ -196,7 +194,8 @@ def writeMenu_list(todo_list):
 
         log.info('done. returning to menu')
 
-def sortTodos(todos,sort_by):
+def sortTodos(todos,*sort_by):
+    print("number of arguments "+str(len(sort_by))+str(sort_by))
     def listit(todos):
         for todo in todos:
             print(todo.ID, todo.createDate, todo.urgency)
