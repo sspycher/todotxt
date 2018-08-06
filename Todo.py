@@ -1,5 +1,6 @@
 import re
 import logging as log
+import datetime
 # need to do it properly. put getters and setters. setters will update the property AND the rawline
 class Todo:
     todoCount = 0
@@ -68,6 +69,7 @@ class Todo:
             return "done"
         else:
             return 'open'
+
     def setCreateDate(self, rl):
         #find a \d\d\d\d-\d\d-\d\d pattern without '^x\s' in front. oder von hinten aufrollen, nachdem das optional due: date übersprungen wurde
         regex_finishDate = r"(^x\s)(\d\d\d\d-\d\d\-\d\d)"
@@ -78,14 +80,19 @@ class Todo:
         if re.search(regex, rl):
             #converting date string to real date (03.08.18)
             datestring = re.search(regex, rl).group().strip()
-            #realdate = datetime.date(int(datestring.split('-')[0]), int(datestring.split('-')[1]), int(datestring.split('-')[2]))
-            return re.search(regex, rl).group().strip()
-        pass
+            realdate = datetime.date(int(datestring.split('-')[0]), int(datestring.split('-')[1]), int(datestring.split('-')[2]))
+            #return re.search(regex, rl).group().strip
+            return realdate
+
+
     def setFinishDate(self,rl):
         regex = r"(^x\s)(\d\d\d\d-\d\d\-\d\d)"
         if re.search(regex, rl):
             try:
-                return re.search(regex,rl).group(2)
+                datestring = re.search(regex,rl).group(2)
+                date = datetime.date(int(datestring.split('-')[0]), int(datestring.split('-')[1]), int(datestring.split('-')[2]))
+                #return re.search(regex,rl).group(2)
+                return date
             except Exception as e:
                 print(e)
         else:
@@ -94,7 +101,11 @@ class Todo:
         regex = r"due\:\s?\d\d\d\d-\d\d-\d\d"
         if re.search(regex, rl):
             dueDate_string = re.search(regex, rl).group()
-            return dueDate_string.split(":")[1]
+            datestring = dueDate_string.split(":")[1]
+            date = datetime.date(int(datestring.split('-')[0]), int(datestring.split('-')[1]),
+                                 int(datestring.split('-')[2]))
+            return date
+            #return dueDate_string.split(":")[1]
         else:
             pass
     def setDescription(self, rl):

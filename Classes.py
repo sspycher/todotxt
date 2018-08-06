@@ -90,3 +90,18 @@ class Menu:
     def function3(self):
         print("function3 chosen")
         self.draw()
+
+class Config:
+    def __init__(self):
+        self.todotxt = ""
+        self.infotxt = ""
+        self.journaltxt = ""
+        self.setpaths()
+
+    def setpaths(self):
+        with open("config/sources.txt","r") as source:
+            lines = source.readlines()
+            todoline = lines[0]
+            self.todotxt = lines[0].split(":")[1].strip()
+            self.infotxt = lines[2].split(":")[1].strip()
+            self.journaltxt = lines[1].split(":")[1].strip()

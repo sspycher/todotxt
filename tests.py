@@ -17,9 +17,6 @@ class TdtTest(unittest.TestCase):
         todo_list.append(Todo.Todo(rawTodo2))
         todo_list.append(Todo.Todo(rawTodo3))
 
-
-
-
     def tearDown(self):
         global todo_list
         try:
@@ -42,7 +39,6 @@ class TdtTest(unittest.TestCase):
         extractedLabels = listAllLabels(todo_list, False)
         for string in extractedLabels:
             self.assertEqual(string[0:1],"+")
-
 
     def test_listAllLabelsObjTypes(self):
         global todo_list
@@ -85,7 +81,6 @@ class TdtTest(unittest.TestCase):
     def test_CSVExport(self):
         pass
 
-
     def test_buildListOfListsWithTodoProperties(self):
         propertiesToExtract = ["ID", "priority", "urgency", "createDate", "finishDate", "description", "contexts",
                                "projects", "size"]
@@ -114,15 +109,79 @@ class TdtTest(unittest.TestCase):
         self.assertEqual(resultTable._rows[1][1],"content col2")
 
     def test_sortingTodosByProperies(self):
-        sorted_list = helpers.sortTodos(todo_list,'createDate','blagurk','humbug')
-        def createDatefromString(datestring):
-            dateList = datestring.split("-")
-            return datetime.date(int(dateList[0]), int(dateList[1]), int(dateList[2]))
-        date1 = createDatefromString(sorted_list[0].createDate)
-        date2 = createDatefromString(sorted_list[1].createDate)
-        date3 = createDatefromString(sorted_list[2].createDate)
-        print(date1,date2,date3)
-        self.assertTrue(date1 < date2 < date3)
+        # recreating todos to make the sorting more relevant
+        todo_list = []
+        todo_list.append(Todo.Todo("(C) 2018-08-01 {0} this has urgency zero $$s"))
+        todo_list.append(Todo.Todo("(A) 2018-08-01 {0} this has urgency zero $$xs"))
+        todo_list.append(Todo.Todo("(A) 2018-09-01 {1} this has urgency one $$m"))
+        todo_list.append(Todo.Todo("(A) 2018-08-01 {2} this has urgency two $$xl"))
+        todo_list.append(Todo.Todo("(B) 2018-07-01 {2} this has urgency two $$xxl"))
+        todo_list.append(Todo.Todo("(A) 2018-07-01 {2} this has urgency two $$l"))
+
+        """
+        sorting by (order) urgency, prio, createDate must yield
+        
+        (A) 2018-08-01 {0} this has urgency zero $$xs
+        (C) 2018-08-01 {0} this has urgency zero $$s
+        (A) 2018-09-01 {1} this has urgency one $$m
+        (A) 2018-07-01 {2} this has urgency two $$l
+        (A) 2018-08-01 {2} this has urgency two $$xl
+        (B) 2018-07-01 {2} this has urgency two $$xxl
+        
+        to check, i'm abusing the size property (xs-xxl)
+        """
+        # this is the 'natural' way of prioritising the sort order. must be reversed in the function sortTodos
+        sorted_list = helpers.sortTodos(todo_list,'urgency','priority','createDate')
+        sorted_sizes = []
+        for todo in sorted_list:
+            sorted_sizes.append(todo.size)
+        self.assertListEqual(sorted_sizes,["XS","S","M","L","XL","XXL"])
+
+    def test_datesaredatesinTodo(self):
+        todo_list.append(Todo.Todo("x 2018-01-01 (C) 2018-08-01 {0} this has urgency zero $$s due:2020-01-01"))
+
+        self.assertIsInstance(getattr(todo_list[3],'createDate'), datetime.date)
+        self.assertIsInstance(getattr(todo_list[3], 'finishDate'), datetime.date)
+        self.assertIsInstance(getattr(todo_list[3], 'dueDate'), datetime.date)
+
+    def test_resolvedWithinDays(self):
+        resolvedDate1 = datetime.date.today() - datetime.timedelta(3)
+        resolvedDate2 = datetime.date.today() - datetime.timedelta(4)
+
+        todo_list.append(Todo.Todo("x "+str(resolvedDate1)+" (C) 2018-08-01 {0} this has urgency zero $$s due:2020-01-01"))
+        todo_list.append(Todo.Todo("x "+str(resolvedDate2)+" (C) 2018-08-01 {0} this has urgency zero $$s due:2020-01-01"))
+
+        resolved_todos = resolvedWithinDays(1, todo_list)
+        self.assertEqual(len(resolved_todos),0)
+
+        resolved_todos = resolvedWithinDays(2, todo_list)
+        self.assertEqual(len(resolved_todos),0)
+
+        resolved_todos = resolvedWithinDays(3, todo_list)
+        self.assertEqual(len(resolved_todos),1)
+
+        resolved_todos = resolvedWithinDays(4, todo_list)
+        self.assertEqual(len(resolved_todos),2)
+
+    def test_addedWithinDays(self):
+        addedDate1 = datetime.date.today() - datetime.timedelta(3)
+        addedDate2 = datetime.date.today() - datetime.timedelta(4)
+
+        todo_list.append(Todo.Todo("(C) "+str(addedDate1)+" {0} this has urgency zero $$s due:2020-01-01"))
+        todo_list.append(Todo.Todo("(C) "+str(addedDate2)+" {0} this has urgency zero $$s due:2020-01-01"))
+
+        added_todos = addedWithinDays(1, todo_list)
+        self.assertEqual(len(added_todos),0)
+
+        added_todos = addedWithinDays(2, todo_list)
+        self.assertEqual(len(added_todos),0)
+
+        added_todos = addedWithinDays(3, todo_list)
+        self.assertEqual(len(added_todos),1)
+
+        added_todos = addedWithinDays(4, todo_list)
+        self.assertEqual(len(added_todos),2)
+
 if __name__ == "__main__":
     todo_list = []
     unittest.main()

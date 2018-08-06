@@ -158,6 +158,8 @@ def writeMenu_list(todo_list):
 
         # testing building the same with tableobj
         table_content = tdt.resolvedWithinDays(days,todo_list)
+        table_content = sortTodos(table_content,"finishDate","urgency","priority")
+
         resolved_table = Classes.TableObj()
         resolved_table.width = 300
         resolved_table.numOfCols = 9
@@ -182,6 +184,8 @@ def writeMenu_list(todo_list):
 
         # testing building the same with tableobj
         table_content = tdt.addedWithinDays(days,todo_list)
+        table_content = sortTodos(table_content,"createDate","urgency","priority")
+
         added_table = Classes.TableObj()
         added_table.width = 300
         added_table.numOfCols = 9
@@ -195,21 +199,13 @@ def writeMenu_list(todo_list):
         log.info('done. returning to menu')
 
 def sortTodos(todos,*sort_by):
-    print("number of arguments "+str(len(sort_by))+str(sort_by))
-    def listit(todos):
-        for todo in todos:
-            print(todo.ID, todo.createDate, todo.urgency)
-    print('origial')
-    listit(todos)
-    todos.sort(key=lambda x: x.createDate, reverse=False)
-    print('createdate')
 
-    listit(todos)
-    """
-    todos.sort(key=lambda x: x.priority)
-    print('priority')
-
-    listit(todos)
-    """
+    #print("number of arguments "+str(len(sort_by))+str(sort_by))
+    # reverse arguments. last one must go first
+    # this is done by starting with the length -1, going to 0, by stepping -1
+    for i in range(len(sort_by)-1,-1,-1):
+        todos.sort(key=lambda x: getattr(x, sort_by[i]), reverse=False)
+        #print("sorted by",sort_by[i])
+        #for todo in todos:
+        #    print(todo.rawline)
     return todos
-    #todo add sorting of todolist with arbitrary number of sort keys

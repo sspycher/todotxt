@@ -5,7 +5,7 @@ import time
 
 import datetime
 from Todo import Todo
-from Classes import *
+import Classes
 from tableoutput import *
 from operator import itemgetter, attrgetter, methodcaller
 import helpers
@@ -24,7 +24,9 @@ def background():
 
 def save_state():
     #todo: add sorting by prio of entire list
-    filepath = "../../Lists2/todo.txt"
+    #filepath = "Files/todo.txt"
+    filepath = config.todotxt
+
     log.info('saving all objects to: '+filepath)
     log.debug("size of todo_list is")
     log.debug(str(len(todo_list)))
@@ -98,6 +100,7 @@ def listByLabel(todo_list,label,connect=False):
         except Exception as e:
             log.debug("encountered error in listByLabel")
             pass
+    result = helpers.sortTodos(result,"urgency","priority","createDate")
     if connect is False:
         return result
     # this will only be executed if mode is 'connect=True'
@@ -188,8 +191,8 @@ def addTodo():
         log.info("sorting todo_list")
         try:
             # sort here (new function sortBy())
-            todo_list = sortBy(todo_list)#, urgency = True)
-            #todo_list = sorted_todo_list
+            #todo_list = sortBy(todo_list)#, urgency = True)
+            todo_list = helpers.sortTodos(todo_list,"urgency","priority")
         except Exception as e:
             log.critical("sorting did not work")
             print(e)
@@ -333,10 +336,8 @@ def resolvedWithinDays(NumOfDays,todo_list):
             if todo.finishDate is not None:
                 #convert str to date object
                 log.debug('constructing date from string')
-                dateList = todo.finishDate.split("-")
-                todoFinishDate = datetime.date(int(dateList[0]),int(dateList[1]),int(dateList[2]))
                 log.debug('comparing today with reconstructed todo date')
-                if todoFinishDate <= today and todoFinishDate >= startdate:
+                if todo.finishDate <= today and todo.finishDate >= startdate:
                     resultList.append(todo)
         log.info('returning result list of length: ' +str(len(resultList)))
         return resultList
@@ -356,11 +357,11 @@ def addedWithinDays(NumOfDays,todo_list):
         for todo in todo_list:
             if todo.createDate is not None:
                 #convert str to date object
-                log.debug('constructing date from string')
-                dateList = todo.createDate.split("-")
-                todoAddedDate = datetime.date(int(dateList[0]),int(dateList[1]),int(dateList[2]))
-                log.debug('comparing today with reconstructed todo date')
-                if todoAddedDate <= today and todoAddedDate >= startdate:
+                #log.debug('constructing date from string')
+                #dateList = todo.createDate.split("-")
+                #todoAddedDate = datetime.date(int(dateList[0]),int(dateList[1]),int(dateList[2]))
+                #log.debug('comparing today with reconstructed todo date')
+                if todo.createDate <= today and todo.createDate >= startdate:
                     resultList.append(todo)
         log.info('returning result list of length: ' +str(len(resultList)))
         return resultList
@@ -395,10 +396,14 @@ def connect_all():
     print('connecting todos with journal and info\n')
     global journal_list
     log.info("building journal list")
-    journal_list = buildIt("../../Lists2/journal.txt", "Journal")
+    #journal_list = buildIt("../../Lists2/journal.txt", "Journal")
+    journal_list = buildIt(config.journaltxt, "Journal")
+
     global info_list
     log.info("building info_list")
-    info_list = buildIt("../../Lists2/info.txt", "Info List")
+    #info_list = buildIt("../../Lists2/info.txt", "Info List")
+    info_list = buildIt(config.infotxt, "Info List")
+
     log.info("user input choice 'label or context'")
     list_or_context = input("label or context? ('l' vs 'c')\n")
     # -------------------------------------------------------------------------------------------#
@@ -476,7 +481,7 @@ def main_menu():
                        "*  dumptable (dt)\n\n")
         # -------------------------------------------------------------------------------------------#
         if option == 'rebuild' or option == 'r':  # (if list changed externally)':
-            todo_list = buildIt("../../Lists2/todo.txt", "Todo List")
+            todo_list = buildIt(config.todotxt, "Todo List")
         # -------------------------------------------------------------------------------------------#
         elif option == 'dump' or option == 'd':
             print("\nlenght of list: ", len(todo_list))
@@ -626,7 +631,7 @@ def main():
     threading1.start()
     global todo_list
     log.info("reading todo.txt")
-    todo_list = buildIt("../../Lists2/todo.txt", "Todo List")
+    todo_list = buildIt(config.todotxt, "Todo List")
 
     while True:
         log.debug("writing menu")
@@ -639,6 +644,7 @@ if __name__ == "__main__":
 
     log.basicConfig(filename='debug.log', level=log.INFO, format=format_string)
     log.info("---------------- starting ----------------")
+    config = Classes.Config()
     log.warning("TODO: nothing")
     todo_list = []
     log.debug("empty todo_list global var created")
