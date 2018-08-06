@@ -1,0 +1,3 @@
+todo:../../Lists2/todo.txt
+journal:../../Lists2/journal.txt
+info:../../Lists2/info.txt
