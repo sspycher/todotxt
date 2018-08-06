@@ -6,3 +6,4 @@ debug.log
 *.pyc
 *.pyc
 *.log
+.idea/workspace.xml
