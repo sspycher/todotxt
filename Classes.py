@@ -1,3 +1,5 @@
+import logging as log
+
 class TableObj:
     def __init__(self):
         self.numOfCols = 0
@@ -47,7 +49,7 @@ class Query:
                 elif status == "d":
                     status = "done"
             else:
-                print("no status set")
+                log.info("no status set")
                 status = ["open","done"]
         return status
 

@@ -12,7 +12,7 @@ class TdtTest(unittest.TestCase):
         global todo_list
         rawTodo1 = "(A) 2021-01-01 this is a dummy todo following the proposed structure {1} +WTF . and now i'm adding a whole lot of more text to be able to teest lenght assertions later on (182 chars)"
         rawTodo2 = "(B) 2019-01-02 01-01-2020 and this one is a fucking mess {2}1 +testing and this @Context"
-        rawTodo3 = "(Z) 2022-01-03 -11-11 this is a + sign that should not be added to label list. neither should email@adresses.com, @Testing"
+        rawTodo3 = "(Z) 2022-01-03 this is a + sign that should not be added to label list. {3} neither should email@adresses.com, @Testing"
         todo_list.append(Todo.Todo(rawTodo1))
         todo_list.append(Todo.Todo(rawTodo2))
         todo_list.append(Todo.Todo(rawTodo3))
@@ -181,6 +181,34 @@ class TdtTest(unittest.TestCase):
 
         added_todos = addedWithinDays(4, todo_list)
         self.assertEqual(len(added_todos),2)
+
+    def test_listCommands(self):
+        import tdt
+        # resetting and refilling todolist to improve testability
+
+        todo_list.append(Todo.Todo("(A) {0} this is the second @Testing test@mail.com context"))
+
+        # testing contexts
+        # ---------------------------------------------------------------
+        context_dict = tdt.listAllContexts(todo_list)
+        self.assertIsInstance(context_dict,dict)
+        self.assertDictEqual(context_dict,{'@Testing': 2, '@Context': 1})
+        # testing query u=0 p=a s=o
+        # ---------------------------------------------------------------
+        myQuery = Classes.Query("u=1 p=a s=o")
+        filtered_list = tdt.byManualQuery(myQuery,todo_list)
+        self.assertTrue(len(filtered_list),1)
+        # eisenhower
+        # ---------------------------------------------------------------
+        todo_list.append(Todo.Todo("(F) {3} eisenhower this is the second @Testing test@mail.com context"))
+        table_obj = tdt.eisenhower(todo_list,True)
+        self.assertEqual(table_obj._rows[1][3], " - ".join([str(todo_list[0].ID),todo_list[0].description[0:60].strip()]))
+        # list by prio (lp)
+        # ---------------------------------------------------------------
+        prio = "Z"
+        todos_filtered = listByPrio(prio, todo_list)
+        self.assertEqual(todos_filtered[0].priority, "(Z)")
+        self.assertEqual(len(todos_filtered),1)
 
 if __name__ == "__main__":
     todo_list = []

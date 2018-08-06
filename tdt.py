@@ -135,9 +135,9 @@ def listByStatus(status,todo_list):
     log.info("returning result list from listByStatus()")
     return result_list
 
-def listByPrio(prio,todo_list):
+def listByPrio(prio,todo_list,status = "open"):
     log.info("in function listByPrio")
-    status = input("status open or done\n")
+    if not status: status = input("status open or done\n")
     prio = "("+prio+")"
     prioTodos = []
     for todo in todo_list:
@@ -379,7 +379,7 @@ def destroyObjects(objLists):
 
 def byManualQuery(queryObj,todo_list):
     log.info("in function byManualQuery")
-    print("query is : ", vars(queryObj))
+    #print("query is : ", vars(queryObj))
     result_list = []
     for todo in todo_list:
         # these are 'and' relations. 'OR' is not in yet

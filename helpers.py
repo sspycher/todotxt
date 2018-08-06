@@ -140,7 +140,7 @@ def writeMenu_list(todo_list):
     # -------------------------------------------------------------------------------------------#
     elif list == "ls prio" or list == 'lp':
         prio = input("a-z\n")
-        table.resultTable(tdt.listByPrio(prio.upper(),todo_listl))
+        table.resultTable(tdt.listByPrio(prio.upper(),todo_list))
     # -------------------------------------------------------------------------------------------#
     elif list == "urgency" or list == 'u':
         urgency = input("1-3\n")

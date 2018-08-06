@@ -77,7 +77,7 @@ def exportThis(result):
 
 
 
-def eisenhower(todo_list):
+def eisenhower(todo_list,testing=False):
     def buildRow(prio, urgency):
         return "\n".join([str(todo.ID)+" - "+todo.description[0:limiter].strip() for todo in todo_list if todo.priority in prio and todo.urgency == urgency and todo.status == "open"])
     log.info("drawing eisenhower list")
@@ -120,7 +120,10 @@ def eisenhower(todo_list):
     HZ_esc = buildRow(prio_list,"0")
     table.add_row(["(H)-(Z)", HZ_low, HZ_med, HZ_hig, HZ_esc])
 
-    print(table.draw())
+    if not testing:
+        print(table.draw())
+    else:
+        return table
 
 def labelTable(allLabels, drawtable = True):
     allTables = []
