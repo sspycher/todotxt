@@ -484,13 +484,17 @@ def main_menu():
     # -------------------------------------------------------------------------------------------#
     # -------------------------------------------------------------------------------------------#
     elif entry == 'options' or entry == 'o':
-        option = input("*  [wip]rebuild (r)\n"
-                       "*  [wip]test\n"
+        option = input("*  rebuild (r)\n"
+                       "*  save (s)\n" 
                        "*  dump (d)\n"
                        "*  dumptable (dt)\n\n")
         # -------------------------------------------------------------------------------------------#
         if option == 'rebuild' or option == 'r':  # (if list changed externally)':
             todo_list = buildIt(config.todotxt, "Todo List")
+        # -------------------------------------------------------------------------------------------#
+        elif option == 'save' or option == 's':
+            log.info('saving (manually triggered')
+            save_state()
         # -------------------------------------------------------------------------------------------#
         elif option == 'dump' or option == 'd':
             print("\nlenght of list: ", len(todo_list))
