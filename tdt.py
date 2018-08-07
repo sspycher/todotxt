@@ -100,7 +100,7 @@ def listByLabel(todo_list,label,connect=False):
         except Exception as e:
             log.debug("encountered error in listByLabel")
             pass
-    result = helpers.sortTodos(result,"urgency","priority","createDate")
+    result = helpers.sortTodos(result,"status","urgency","priority","createDate")
     if connect is False:
         return result
     # this will only be executed if mode is 'connect=True'
@@ -128,11 +128,21 @@ def listByStatus(status,todo_list):
     for todo in todo_list:
         try:
             if todo.status == status:
-                #print("".join([todo.priority,"\t",todo.description.strip()]))
                 result_list.append(todo)
         except Exception as e:
             print("Error", e, vars(todo))
     log.info("returning result list from listByStatus()")
+    return result_list
+
+def listBySize(todo_list, size,status):
+    log.info("listing by size")
+    result_list = []
+    for todo in todo_list:
+        try:
+            if todo.size == size and todo.status in status:
+                result_list.append(todo)
+        except Exception as e:
+            log.info("listing by size failed due to :"+e)
     return result_list
 
 def listByPrio(prio,todo_list,status = "open"):
@@ -151,7 +161,6 @@ def listByPrio(prio,todo_list,status = "open"):
 def listByUrgency(urgency,todo_list):
     log.info("in function listByUrgency")
     status = "open" #input("status open or done\n")
-    #prio = urgency
     urgencyTodos = []
     for todo in todo_list:
         try:
@@ -495,103 +504,7 @@ def main_menu():
     # -------------------------------------------------------------------------------------------#
     elif entry == 'list' or entry == 'l':
         helpers.writeMenu_list(todo_list)
-        """
-        list = input(
-            "*  list all (c)ontexts\n"
-            "*  list by context (lc)\n"
-            "*  list all (l)abels\n"
-            "*  list by label (ll)\n"
-            "*  list by status (ls)\n"
-            "*  list by prio (lp)\n"
-            "*  list by query (lq)\n"
-            "*  list by urgency (u)\n"
-            "*  list today, this week, this month this year (TODO)\n"
-            "*  list by big Goals (TODO)\n"
-            "*  added last n days (a <days>\n"
-            "*  resolved last n days (r <days>)\n\n"
-            "*  eisenhower (e)\n")
-        # -------------------------------------------------------------------------------------------#
-        if list == 'contexts' or list == 'c':
-            log.debug("listing all contexts")
-            context_dict = listAllContexts(todo_list)
-            log.debug("content of context dict")
-            log.debug(type(context_dict))
-            log.info("building table object")
-            newTable = TableObj()
-            newTable.numOfCols = 2
-            newTable.colHeaders = ["context", "count"]
-            newTable.content = context_dict
-            tableFromTableObj(newTable,True)
-        # -------------------------------------------------------------------------------------------#
-        elif list.startswith("lq"):
-            print("something like u=1,2 p=a,b s=o|d")
-            query = list.replace("lq ", "")
-            query = query.split(" ")
-            myQuery = Query(query)
-            filtered_list = byManualQuery(myQuery)
-            resultTable(filtered_list)
-        # -------------------------------------------------------------------------------------------#
-        elif list == 'eisenhower' or list == 'e':
-            eisenhower(todo_list)
-        # -------------------------------------------------------------------------------------------#
-        elif list == 'labels' or list == 'l':
-            listAllLabels(todo_list)
-        # -------------------------------------------------------------------------------------------#
-        elif list == 'ls context' or list == 'lc':
-            context = input('context without @ but accurate cases\n')
-            try:
-                result = listByContext(context)
-                resultTable(result)
-            except Exception as e:
-                print(e)
-        # -------------------------------------------------------------------------------------------#
-        elif list == 'll' or list == 'ls label':
-            label = input('label without +, but accurate cases\n')
-            try:
-                result = listByLabel(todo_list, label)
-                resultTable(result)
-            except Exception as e:
-                print(e)
-        # -------------------------------------------------------------------------------------------#
-        elif list == "status" or list == 'ls':
-            log.debug("running with option list->status (ls)")
-            status = input("status. 'open' or 'done'\n")
-            log.info("calling listByStatus(status) with status " + status)
-            result = listByStatus(status)
-            log.info("result is set to" + str(len(result)))
-            resultTable(result)
-        # -------------------------------------------------------------------------------------------#
-        elif list == "ls prio" or list == 'lp':
-            prio = input("a-z\n")
-            resultTable(listByPrio(prio.upper()))
-        # -------------------------------------------------------------------------------------------#
-        elif list == "urgency" or list == 'u':
-            urgency = input("1-3\n")
-            resultTable(listByUrgency(urgency))
-        # -------------------------------------------------------------------------------------------#
-        elif list.startswith("r"):
-            log.debug('chose resolved within days')
-            try:
-                days = int(list.split(" ")[1])
-            except IndexError:
-                log.warning('invalid input, setting to 0 (today)')
-                days = 0
-            # the old, static way of building a table
-            # resultTable(resolvedWithinDays(days))
 
-            # testing building the same with tableobj
-            table_content = resolvedWithinDays(days)
-            resolved_table = TableObj()
-            resolved_table.width = 300
-            resolved_table.numOfCols = 9
-            resolved_table.colHeaders = ["ID", "P", "U", "Created","Resolved","Description","Context","Tags","Size"]
-            propertiesToExtract = ["ID", "priority", "urgency", "createDate","finishDate","description","contexts","projects","size"]
-
-            resolved_table.content = helpers.buildListOfListsWithTodoProperties(table_content,propertiesToExtract, resolved_table.descriptionLimiter)
-            tableFromTableObj(resolved_table,True)
-
-            log.info('done. returning to menu')
-            """
     # -------------------------------------------------------------------------------------------#
     # -------------------------------------------------------------------------------------------#
     elif entry == 'add' or entry == 'a':

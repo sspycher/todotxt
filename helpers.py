@@ -78,6 +78,7 @@ def writeMenu_list(todo_list):
         "*  list all (l)abels\n"
         "*  list by label (ll)\n"
         "*  list by status (ls)\n"
+        "*  list by size (size)\n"
         "*  list by prio (lp)\n"
         "*  list by query (lq)\n"
         "*  list by urgency (u)\n"
@@ -126,6 +127,17 @@ def writeMenu_list(todo_list):
         label = input('label without +, but accurate cases\n')
         try:
             result = tdt.listByLabel(todo_list, label)
+            table.resultTable(result)
+        except Exception as e:
+            print(e)
+    # -------------------------------------------------------------------------------------------#
+    elif list == 'size':
+        size = input('xs,s,m,l,xl,xxl\n').upper()
+        status = input('open or done. or "all"\n')
+        if status == "": status = 'open'
+        if status == "all": status = ['open','done']
+        try:
+            result = tdt.listBySize(todo_list,size,status)
             table.resultTable(result)
         except Exception as e:
             print(e)
