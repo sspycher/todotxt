@@ -112,6 +112,8 @@ def writeMenu_list(todo_list):
         tdt.eisenhower(todo_list)
     # -------------------------------------------------------------------------------------------#
     elif list == 'labels' or list == 'l':
+        log.warning("todolist id is " + str(id(todo_list)))
+
         tdt.listAllLabels(todo_list,True)
     # -------------------------------------------------------------------------------------------#
     elif list == 'ls context' or list == 'lc':
@@ -145,9 +147,9 @@ def writeMenu_list(todo_list):
     elif list == "status" or list == 'ls':
         log.debug("running with option list->status (ls)")
         status = input("status. 'open' or 'done'\n")
-        log.info("calling listByStatus(status) with status " + status)
+        log.debug("calling listByStatus(status) with status " + status)
         result = tdt.listByStatus(status,todo_list)
-        log.info("result is set to" + str(len(result)))
+        log.debug("result is set to" + str(len(result)))
         table.resultTable(result)
     # -------------------------------------------------------------------------------------------#
     elif list == "ls prio" or list == 'lp':

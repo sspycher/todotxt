@@ -89,7 +89,7 @@ def eisenhower(todo_list,testing=False):
     log.info("softwrap (table width is set to "+str(width))
     table.add_row([""       ,"Low Urgency","Medium Urgency","High Urgency", "Escalation & Interruptive"])
 
-    log.info("drawing row (A)")
+    log.debug("drawing row (A)")
     prio_list = ["(" + char + ")" for char in "a".upper()]
     A_low = buildRow(prio_list,"3")
     A_med = buildRow(prio_list,"2")
@@ -97,7 +97,7 @@ def eisenhower(todo_list,testing=False):
     A_esc = buildRow(prio_list,"0")
     table.add_row(["(A)", A_low, A_med, A_hig, A_esc])
 
-    log.info("drawing row (B)&(C)")
+    log.debug("drawing row (B)&(C)")
     prio_list = ["(" + char + ")" for char in "bc".upper()]
     B_low = buildRow(prio_list,"3")
     B_med = buildRow(prio_list,"2")
@@ -105,7 +105,7 @@ def eisenhower(todo_list,testing=False):
     B_esc = buildRow(prio_list,"0")
     table.add_row(["(B)&(C)", B_low, B_med, B_hig, B_esc])
 
-    log.info("drawing row (D)-(G)")
+    log.debug("drawing row (D)-(G)")
     prio_list = ["(" + char + ")" for char in "defg".upper()]
     DG_low = buildRow(prio_list,"3")
     DG_med = buildRow(prio_list,"2")
