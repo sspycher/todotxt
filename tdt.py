@@ -304,6 +304,7 @@ def updateTodo(todo_list, choice = ""):
                     todo.rawline = todo.rawline.strip()
 
                     todo.rawline += stringToAdd
+                    todo.setDescription(todo.rawline)
                     log.info(todo.rawline)
                     log.debug("todolist id is "+str(id(todo_list)))
                     save_state(todo_list)
