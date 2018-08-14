@@ -2,14 +2,18 @@
 
 import threading
 import time
-
+import logging as log
 import datetime
 from Todo import Todo
 import Classes
-from tableoutput import *
+import tableoutput as table
 from operator import itemgetter, attrgetter, methodcaller
 import helpers
+import sys
 
+# declaring global variable config
+config = Classes.Config()
+unsaved_changes = []
 
 """
 Todos:
@@ -25,12 +29,15 @@ def background():
 def save_state(todo_list):
     #todo: add sorting by prio of entire list
     #filepath = "Files/todo.txt"
+    global config
     filepath = config.todotxt
+    print(filepath)
     log.debug("todolist id is " + str(id(todo_list)))
     log.info('saving all objects to: '+filepath)
     log.debug("size of todo_list is")
     log.debug(str(len(todo_list)))
     if len(todo_list)>0:
+        print("wrting to file %s" %filepath)
         with open(filepath,"w", encoding='UTF-8') as file:
             log.info("function save_state, writing to " + str(file))
             for todo in todo_list:
@@ -51,133 +58,8 @@ def save_state(todo_list):
         log.critical("exiting due to zero length todo_list")
         exit()
 
-
-def listAllContexts(todo_list):
-    log.debug("in function listAllContexts()")
-    context_dict = {}
-    for todo in todo_list:
-        if todo.contexts:
-            for context in todo.contexts:
-                #context_list.append(context)
-                if context not in context_dict:
-                    context_dict[context] = 1
-                else:
-                    context_dict[context] +=1
-    #implement sorting. but dicts are hairy to sort. find an elegant way
-    # maybe create a list of tuples
-    log.info("sorting dictionary")
-    sorted_list_from_dict = sorted(context_dict.items(), key=itemgetter(1), reverse=True)
-    sorted_dict = {}
-    for tuple in sorted_list_from_dict:
-        log.debug(type(tuple))
-        log.debug(tuple[0])
-        log.debug(tuple[1])
-        sorted_dict[tuple[0]] = tuple[1]
-    log.debug(sorted_dict)
-    return sorted_dict
-
-def listByContext(todo_list, context, connect=False):
-    log.debug("in function listByContext")
-    result = []
-    context = "".join(["@",context])
-    for todo in todo_list:
-        try:
-            if context in todo.contexts:
-                result.append(todo)
-        except Exception as e:
-            pass
-    if connect is False:
-        return result
-    # this will only be executed if mode is 'connect=True'
-    else:
-        result = helpers.buildConnectionTable(result, context, journal_list, info_list)
-        return result
-
-def listByLabel(todo_list,label,connect=False):
-    log.info("in function listByLabel() with label "+label+" and connect flag "+str(connect))
-    result = []
-    label = "".join(["+",label])
-    for todo in todo_list:
-        try:
-            log.debug("in for loop within todo_list, looking for label "+label+" in property Todo.projects")
-            if label in todo.projects:
-                log.debug("label "+label+" found, appending entire object to list result")
-                result.append(todo)
-        except Exception as e:
-            log.debug("encountered error in listByLabel")
-            pass
-    result = helpers.sortTodos(result,"status","urgency","priority","createDate")
-    if connect is False:
-        return result
-    # this will only be executed if mode is 'connect=True'
-    else:
-        result = helpers.buildConnectionTable(result, label, journal_list, info_list)
-        return result
-
-
-def listAllLabels(todo_list, drawtable):
-    log.debug("in function listAllLabels")
-    labels_list = []
-    for todo in todo_list:
-        if todo.projects:
-            for label in todo.projects:
-                labels_list.append(label)
-    labels_list = set(labels_list)
-    labels_list = sorted(labels_list)
-    table = labelTable(labels_list, drawtable)
-    return labels_list
-
-
-def listByStatus(status,todo_list):
-    log.debug("in function listByStatus")
-    result_list = []
-    for todo in todo_list:
-        try:
-            if todo.status == status:
-                result_list.append(todo)
-        except Exception as e:
-            print("Error", e, vars(todo))
-    log.info("returning result list from listByStatus()")
-    return result_list
-
-def listBySize(todo_list, size,status):
-    log.debug("listing by size")
-    result_list = []
-    for todo in todo_list:
-        try:
-            if todo.size == size and todo.status in status:
-                result_list.append(todo)
-        except Exception as e:
-            log.info("listing by size failed due to :"+e)
-    log.info("list by size "+size+" resulted in "+str(len(result_list))+" results")
-    return result_list
-
-def listByPrio(prio,todo_list,status = "open"):
-    log.debug("in function listByPrio")
-    if not status: status = input("status open or done\n")
-    prio = "("+prio+")"
-    prioTodos = []
-    for todo in todo_list:
-        try:
-            if todo.priority == prio and todo.status == status:
-                prioTodos.append(todo)
-        except Exception as e:
-            print("Error", e)
-    return prioTodos
-
-def listByUrgency(urgency,todo_list):
-    log.debug("in function listByUrgency")
-    status = "open" #input("status open or done\n")
-    urgencyTodos = []
-    for todo in todo_list:
-        try:
-            if todo.urgency == urgency and todo.status == status:
-                urgencyTodos.append(todo)
-        except Exception as e:
-            print("Error", e)
-    return urgencyTodos
-
 def sortBy(todo_list, urgency=False):
+    global config
     log.debug("in function sortBy")
     s = sorted(todo_list, key=attrgetter('priority'))
     if urgency:
@@ -187,44 +69,8 @@ def sortBy(todo_list, urgency=False):
     todo_list = sorted_todo_list
     return todo_list
 
-def addTodo(todo_list):
-    log.debug("in function addTodo()")
-    # pulling up global todo_list to be referenced in substituion in sorting later
-    #global todo_list
-    rawline = helpers.addTodo_CollectContent()
-    log.info("now building new ToDo")
-
-    confirmTodo = input("do you want to save\n\n   "+rawline+"\ny/n?\n")
-    if confirmTodo == 'y':
-        try:
-            log.info("adding '"+rawline+"' to list")
-            newTodo = Todo(rawline)
-            todo_list.append(newTodo)
-        except Exception as e:
-            log.critical("was not able to build todo")
-            print(e)
-            pass
-        log.info("sorting todo_list")
-        try:
-            # sort here (new function sortBy())
-            #todo_list = sortBy(todo_list)#, urgency = True)
-            todo_list = helpers.sortTodos(todo_list,"urgency","priority")
-        except Exception as e:
-            log.critical("sorting did not work")
-            print(e)
-            pass
-        try:
-            print("saving to file....\n")
-            save_state(todo_list)
-        except Exception as e:
-            log.error("something went wrong while saving file")
-            print(e)
-        log.critical("ToDo: extend modificaiton to existing todos to make it really useful")
-        log.critical("ToDo: add verification to individual entries")
-    else:
-        print("aborting...")
-
 def updateTodo(todo_list, choice = ""):
+    global config
     log.debug("in function updateTodo")
     #choice = ""
     try:
@@ -235,7 +81,7 @@ def updateTodo(todo_list, choice = ""):
         for todo in todo_list:
             if todo.ID == choice:
                 found = True
-                resultTable([todo],100000,False,200)
+                table.resultTable([todo],100000,False,200)
                 action = input("\nAvailable modification commands:\n\n"
                                "*  <x> for resolving\n"
                                "*  <prio A-Z> to change priority\n"
@@ -325,7 +171,7 @@ def updateTodo(todo_list, choice = ""):
                 else:
                     print("the computer says 'nooo'")
                     log.info("invalid entry, restart")
-                resultTable([todo])
+                    table.resultTable([todo])
                 # maybe delete this save todo
                 save_state(todo_list)
             else:
@@ -345,11 +191,12 @@ def updateTodo(todo_list, choice = ""):
         for todo in todo_list:
             if todo.status == 'open':
                 list_for_table.append(todo)
-        resultTable(list_for_table)
+        table.resultTable(list_for_table)
         log.info("calling updatetodo again")
         updateTodo(todo_list)
 
 def resolvedWithinDays(NumOfDays,todo_list):
+    global config
     # returns list of objects which meet the criteria
     log.debug("in function resolvedWithinDAys")
     resultList = []
@@ -371,6 +218,7 @@ def resolvedWithinDays(NumOfDays,todo_list):
         print("failed, please check log file" )
 
 def addedWithinDays(NumOfDays,todo_list):
+    global config
     # todo simplify and merge with resolved
     # returns list of objects which meet the criteria
     log.debug("in function addedWithinDays")
@@ -395,38 +243,24 @@ def addedWithinDays(NumOfDays,todo_list):
         print("failed, please check log file" )
 
 def destroyObjects(objLists):
+    global config
     log.debug("in function destroyObjects")
     for list in objLists:
         for obj in list:
             print("now destructing obj", obj, type(obj))
             del list.obj
 
-def byManualQuery(queryObj,todo_list):
-    log.debug("in function byManualQuery")
-    #print("query is : ", vars(queryObj))
-    result_list = []
-    for todo in todo_list:
-        # these are 'and' relations. 'OR' is not in yet
-        if todo.priority in queryObj.priority:
-            if todo.status in queryObj.status:
-                if todo.urgency in queryObj.urgency:
-                    result_list.append(todo)
-        else:
-            pass
-    return result_list
-
 def connect_all(todo_list):
+    global config
     log.debug("todolist id is " + str(id(todo_list)))
     log.info("menu option 'connect'")
     print('connecting todos with journal and info\n')
     global journal_list
     log.info("building journal list")
-    #journal_list = buildIt("../../Lists2/journal.txt", "Journal")
     journal_list = buildIt(config.journaltxt, "Journal")
 
     global info_list
     log.info("building info_list")
-    #info_list = buildIt("../../Lists2/info.txt", "Info List")
     info_list = buildIt(config.infotxt, "Info List")
 
     log.info("user input choice 'label or context'")
@@ -437,8 +271,7 @@ def connect_all(todo_list):
         label = input("enter label/tag to list (without '+') \n")
         try:
             log.info("calling listByLabel() with user input label " + label)
-            result = listByLabel(todo_list, label, True)
-            # resultTable(result)
+            result = helpers.listByLabel(todo_list, label, journal_list, info_list, True)
         except Exception as e:
             log.error("error " + str(e) + " encountered in calling listByLabel with Label " + label)
             print(e)
@@ -446,8 +279,7 @@ def connect_all(todo_list):
     elif list_or_context == 'c':
         label = input("enter context to list (without '@') \n")
         try:
-            result = listByContext(todo_list, label, True)
-            # resultTable(result)
+            result = helpers.listByContext(todo_list, journal_list, info_list, label, True)
         except Exception as e:
             print(e)
     else:
@@ -455,7 +287,7 @@ def connect_all(todo_list):
         log.info("invalid user input")
 
     try:
-        resultTable(result, 10000, False, 200)  # content, limiter ,return tableobj, width
+        table.resultTable(result, 10000, False, 200)  # content, limiter ,return tableobj, width
         log.info("asking if user wants to export")
         export = input("do you want to export this? y/n\n")
         # -------------------------------------------------------------------------------------------#
@@ -465,7 +297,7 @@ def connect_all(todo_list):
         # -------------------------------------------------------------------------------------------#
         elif export == 'y':
             log.info("exporting connected list")
-            exportThis(result)
+            helpers.exportThis(result)
         else:
             print("invalid entry")
     except:
@@ -473,76 +305,110 @@ def connect_all(todo_list):
         log.critical("something went wrong while writing the result table")
         pass
 
-def main_menu(todo_list):
+
+def menu_display_input_options(options):
+    choice = input(options)
+    return choice
+
+def writeMenu_main(todo_list, in_test_mode=False, menu_option=""):
+    global config
     log.debug("in function main_menu()")
-    #global todo_list
-    entry = input(
-        "\n"
-        "type:\n\n"
-        "*  today (t)\n"
-        "*  connect (c)\n"
-        "*  options (o)\n"
-        "*  list (l)\n"
-        "*  add (a)\n"
-        "*  modify (m)\n"
-        "*  exit\n"
-    )
+    if not in_test_mode:
+        entry = input(
+            "\n"
+            "type:\n\n"
+            "*  today (t)\n"
+            "*  connect (c)\n"
+            "*  options (o)\n"
+            "*  list (l)\n"
+            "*  add (a)\n"
+            "*  modify (m)\n"
+            "*  exit\n"
+        )
+    else:
+        entry = menu_option
+
+    def processChoice(entry):
+        # -------------------------------------------------------------------------------------------#
+        if entry == 'exit' or entry == 'e':
+            log.info("----------------- user exit ------------------")
+            main_exit()
+        elif entry == 't':
+            todos_today = main_today(todo_list)
+            table.resultTable(todos_today)
+            writeMenu_main(todo_list)
+        elif entry == 'connect' or entry == 'c':
+            todo_list_filtered = main_connect(todo_list)
+            table.resultTable(todo_list_filtered, 10000, False, 200)
+            helpers.export_CSV(todo_list_filtered)
+            writeMenu_main(todo_list)
+        elif entry == 'list' or entry == 'l':
+            writeMenu_list(todo_list)
+            writeMenu_main(todo_list,False,"l")
+        elif entry == 'add' or entry == 'a':
+            helpers.addTodo(todo_list)
+            writeMenu_main(todo_list)
+        else:
+            # continue with rest of list choices
+            pass
     # -------------------------------------------------------------------------------------------#
+    # breaking the menu into smaller functions to enable E2E testability without mocking user input
     # -------------------------------------------------------------------------------------------#
-    if entry == 'exit' or entry == 'e':
-        log.info("----------------- user exit ------------------")
+    def main_exit(): #imported
         print('Saving current state...\nQuitting Plutus. Goodbye!')
         save_state(todo_list)
         sys.exit()
-    # -------------------------------------------------------------------------------------------#
-    elif entry == 't':
+
+    def main_today(todo_list):
         print("due today")
         print("=========")
         todos_today = []
         for todo in todo_list:
             if todo.urgency == '0' and todo.status == 'open': todos_today.append(todo)
-        resultTable(todos_today)
+        return todos_today
+
+    def main_connect(todo_list):
+        global journal_list
+        global info_list
+        labels_or_contexts = input("what contexts or labels are you connecting? (space separated if multiple)\n")
+
+        journal_list = buildIt(config.journaltxt, "Journal")
+        info_list = buildIt(config.infotxt, "Info")
+        todo_list_filtered = helpers.connected_list(todo_list, journal_list, info_list, labels_or_contexts)
+        return todo_list_filtered
+
 
     # -------------------------------------------------------------------------------------------#
-    elif entry == 'connect' or entry == 'c':
-        connect_all(todo_list)
-    # -------------------------------------------------------------------------------------------#
-    # -------------------------------------------------------------------------------------------#
-    elif entry == 'options' or entry == 'o':
+
+    processChoice(entry)
+    # ----------  move up to process choice all below -------------------------------------------#
+    if entry == 'options' or entry == 'o':
         option = input("*  rebuild (r)\n"
                        "*  save (s)\n" 
                        "*  dump (d)\n"
                        "*  dumptable (dt)\n\n")
         # -------------------------------------------------------------------------------------------#
         if option == 'rebuild' or option == 'r':  # (if list changed externally)':
-            for todo in todo_list:
-                del todo
-            del todo_list
-            todo_list = buildIt(config.todotxt, "Todo List")
+            buildIt(config.todotxt, "Todo List")
+            writeMenu_main(todo_list)
         # -------------------------------------------------------------------------------------------#
         elif option == 'save' or option == 's':
             log.info('saving (manually triggered')
             save_state(todo_list)
+            writeMenu_main(todo_list)
         # -------------------------------------------------------------------------------------------#
         elif option == 'dump' or option == 'd':
             print("\nlenght of list: ", len(todo_list))
             for obj in todo_list:
                 print(vars(obj))
+            writeMenu_main(todo_list)
         # -------------------------------------------------------------------------------------------#
         elif option == 'dumptable' or option == 'dt':
             print("\nlenght of list: ", len(todo_list))
-            resultTable(todo_list)
+            table.resultTable(todo_list)
+            writeMenu_main(todo_list)
     # -------------------------------------------------------------------------------------------#
-    # -------------------------------------------------------------------------------------------#
-    elif entry == 'list' or entry == 'l':
-        helpers.writeMenu_list(todo_list)
 
-    # -------------------------------------------------------------------------------------------#
-    # -------------------------------------------------------------------------------------------#
-    elif entry == 'add' or entry == 'a':
-        addTodo(todo_list)
-    # -------------------------------------------------------------------------------------------#
-    # -------------------------------------------------------------------------------------------#
     elif entry == 'modify' or entry == 'm':
         updateTodo(todo_list)
 
@@ -550,13 +416,157 @@ def main_menu(todo_list):
         print("unrecognized input. please try again")
         log.error("user input "+entry+" is invalid")
 
+def writeMenu_list(todo_list):
+    global config
+    list = input(
+        "*  list all (c)ontexts\n"
+        "*  list by context (lc)\n"
+        "*  list all (l)abels\n"
+        "*  list by label (ll)\n"
+        "*  list by status (ls)\n"
+        "*  list by size (size)\n"
+        "*  list by prio (lp)\n"
+        "*  list by query (lq)\n"
+        "*  list by urgency (u)\n"
+        "*  list today, this week, this month this year (TODO)\n"
+        "*  list by big Goals (TODO)\n"
+        "*  added last n days (a <days>)\n"
+        "*  resolved last n days (r <days>)\n\n"
+        "*  eisenhower (e)\n")
+    # -------------------------------------------------------------------------------------------#
+    if list == 'contexts' or list == 'c':
+        log.debug("listing all contexts")
+        context_dict = helpers.listAllContexts(todo_list)
+        log.debug("content of context dict")
+        log.debug(type(context_dict))
+        log.info("building table object")
+        newTable = Classes.TableObj()
+        newTable.numOfCols = 2
+        newTable.colHeaders = ["context", "count"]
+        newTable.content = context_dict
+        table.tableFromTableObj(newTable, True)
+    # -------------------------------------------------------------------------------------------#
+    elif list.startswith("lq"):
+        print("something like u=1,2 p=a,b s=o|d")
+        query = list.replace("lq ", "")
+        query = query.split(" ")
+        myQuery = Classes.Query(query)
+        filtered_list = helpers.listByManualQuery(myQuery,todo_list)
+        table.resultTable(filtered_list)
+    # -------------------------------------------------------------------------------------------#
+    elif list == 'eisenhower' or list == 'e':
+        table.eisenhower(todo_list)
+    # -------------------------------------------------------------------------------------------#
+    elif list == 'labels' or list == 'l':
+        log.warning("todolist id is " + str(id(todo_list)))
+
+        helpers.listAllLabels(todo_list,True)
+    # -------------------------------------------------------------------------------------------#
+    elif list == 'ls context' or list == 'lc':
+        context = input('context without @ but accurate cases\n')
+        try:
+            result = helpers.listByContext(todo_list, journal_list, info_list,context)
+            table.resultTable(result)
+            print("number of hits:"+str(len(result)))
+        except Exception as e:
+            print(e)
+    # -------------------------------------------------------------------------------------------#
+    elif list == 'll' or list == 'ls label':
+        label = input('label without +, but accurate cases\n')
+        try:
+            result = helpers.listByLabel(todo_list, label, journal_list, info_list)
+            table.resultTable(result)
+        except Exception as e:
+            print(e)
+    # -------------------------------------------------------------------------------------------#
+    elif list == 'size':
+        size = input('xs,s,m,l,xl,xxl\n').upper()
+        status = input('open or done. or "all"\n')
+        if status == "": status = 'open'
+        if status == "all": status = ['open','done']
+        try:
+            result = helpers.listBySize(todo_list,size,status)
+            table.resultTable(result)
+        except Exception as e:
+            print(e)
+    # -------------------------------------------------------------------------------------------#
+    elif list == "status" or list == 'ls':
+        log.debug("running with option list->status (ls)")
+        status = input("status. 'open' or 'done'\n")
+        log.debug("calling listByStatus(status) with status " + status)
+        result = helpers.listByStatus(todo_list, status)
+        log.debug("result is set to" + str(len(result)))
+        table.resultTable(result)
+    # -------------------------------------------------------------------------------------------#
+    elif list == "ls prio" or list == 'lp':
+        prio = input("a-z\n")
+        table.resultTable(helpers.listByPrio(prio.upper(),todo_list))
+    # -------------------------------------------------------------------------------------------#
+    elif list == "urgency" or list == 'u':
+        urgency = input("1-3\n")
+        table.resultTable(helpers.listByUrgency(todo_list,urgency))
+    # -------------------------------------------------------------------------------------------#
+    elif list.startswith("r"):
+        log.debug('chose resolved within days')
+        try:
+            days = int(list.split(" ")[1])
+        except IndexError:
+            log.warning('invalid input, setting to 0 (today)')
+            days = 0
+        # the old, static way of building a table
+        try:
+            # testing building the same with tableobj
+            table_content = resolvedWithinDays(days,todo_list)
+            table_content = helpers.sortTodos(table_content,"finishDate","urgency","priority")
+
+            resolved_table = Classes.TableObj()
+            resolved_table.width = 300
+            resolved_table.numOfCols = 9
+            resolved_table.colHeaders = ["ID", "P", "U", "Created", "Resolved", "Description", "Context", "Tags", "Size"]
+            propertiesToExtract = ["ID", "priority", "urgency", "createDate", "finishDate", "description", "contexts",
+                                   "projects", "size"]
+
+            resolved_table.content = helpers.buildListOfListsWithTodoProperties(table_content, propertiesToExtract, resolved_table.descriptionLimiter)
+            table.tableFromTableObj(resolved_table, True)
+
+            log.info('done. returning to menu')
+        except Exception as e:
+            print("unknown Exception caught: ",e)
+    # -------------------------------------------------------------------------------------------#
+
+    elif list.startswith("a"):
+        # todo simplify and merge with resolved
+        log.debug('chose added within days')
+        try:
+            days = int(list.split(" ")[1])
+        except IndexError:
+            log.warning('invalid input, setting to 0 (today)')
+            days = 0
+
+        # testing building the same with tableobj
+        table_content = addedWithinDays(days,todo_list)
+        table_content = helpers.sortTodos(table_content,"createDate","urgency","priority")
+
+        added_table = Classes.TableObj()
+        added_table.width = 300
+        added_table.numOfCols = 9
+        added_table.colHeaders = ["ID", "P", "U", "Created", "Resolved", "Description", "Context", "Tags", "Size"]
+        propertiesToExtract = ["ID", "priority", "urgency", "createDate", "finishDate", "description", "contexts",
+                               "projects", "size"]
+
+        added_table.content = helpers.buildListOfListsWithTodoProperties(table_content, propertiesToExtract, added_table.descriptionLimiter)
+        table.tableFromTableObj(added_table, True)
+
+        log.info('done. returning to menu')
 
 def buildIt(filepath, source):
+    global config
     log.info("in function 'buildIt(), generating from "+filepath +" and source "+source )
     #open todo file and generate objects and put them into list
     with open(filepath, "r", encoding='UTF-8') as file:
         lines = file.readlines()
     todo_list = []
+    Todo.todoCount = 0
     for item in lines:
         try:
             newTodo = Todo(item)
@@ -567,19 +577,19 @@ def buildIt(filepath, source):
     return todo_list
 
 def main():
+    #global config
     log.debug("in function main")
     log.info("starting threading")
     # now threading1 runs regardless of user input
     threading1 = threading.Thread(target=background)
     threading1.daemon = True
     threading1.start()
-    # global todo_list
     log.info("reading todo.txt")
     todo_list = buildIt(config.todotxt, "Todo List")
 
     while True:
         log.debug("writing menu")
-        main_menu(todo_list)
+        writeMenu_main(todo_list)
 
 
 if __name__ == "__main__":
@@ -588,10 +598,8 @@ if __name__ == "__main__":
 
     log.basicConfig(filename='debug.log', level=log.INFO, format=format_string)
     log.info("---------------- starting ----------------")
-    config = Classes.Config()
+
     log.warning("TODO: nothing")
-    #todo_list = []
-    #log.debug("empty todo_list global var created")
     journal_list = []
     log.debug("empty journal_list global var created")
     info_list = []

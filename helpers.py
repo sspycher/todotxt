@@ -1,16 +1,34 @@
 import datetime
 import logging as log
+import Todo
 import tdt
 import Classes
 import tableoutput as table
-from operator import attrgetter
+from operator import itemgetter, attrgetter, methodcaller
+
+config = Classes.Config()
 
 # wrapping input to use mock.patch in unittest as suggested by
 # https://stackoverflow.com/questions/21046717/python-mocking-raw-input-in-unittests
 def get_input(prompt):
     return input(prompt)
 
+def export_CSV(result):
+    log.info("asking if user wants to export")
+    export = input("do you want to export this? y/n\n")
+    # -------------------------------------------------------------------------------------------#
+    if export == 'n':
+        log.info("no export. cancelling")
+        pass
+    # -------------------------------------------------------------------------------------------#
+    elif export == 'y':
+        log.info("exporting connected list")
+        table.exportThis(result)
+    else:
+        print("invalid entry")
+
 def addTodo_CollectContent():
+    global config
     newTodoPrio = "(" + get_input('a-z\n').upper() + ")"
     # todo: add regex based verification
     newTodoText = input('add your todo text\n')
@@ -23,6 +41,41 @@ def addTodo_CollectContent():
         newTodoDueDate = "due:" + newTodoDueDate
     rawline = " ".join([newTodoPrio, newTodoCreateDate, newTodoText, newTodoUrgency, newTodoSize, newTodoDueDate])
     return rawline
+
+def addTodo(todo_list):
+    global config
+    log.debug("in function addTodo()")
+    rawline = addTodo_CollectContent()
+    log.info("now building new ToDo")
+
+    confirm_todo = input("do you want to save\n\n   "+rawline+"\ny/n?\n")
+    if confirm_todo == 'y':
+        try:
+            log.info("adding '"+rawline+"' to list")
+            new_todo = Todo.Todo(rawline)
+            # not appending yet, but rebuilding existing todos from a fresh copy from the file todo.txt
+            # in order to prevent overwrting changes made manually to the file
+            #todo_list.append(new_todo)
+        except Exception as e:
+            log.critical("was not able to build todo")
+            print(e)
+            pass
+        try:
+            print("saving to file %s....\n" % config.todotxt)
+            log.info("rebuilding todo list from: %s" % config.todotxt)
+            todo_list = tdt.buildIt(config.todotxt,"Todos")
+            log.info("appending new todo")
+            todo_list.append(new_todo)
+            log.info("sorting new todo list")
+            todo_list = sortTodos(todo_list,False, "status", "urgency", "priority")
+            log.info("saving new todo list")
+            tdt.save_state(todo_list)
+        except Exception as e:
+            log.error("something went wrong while saving file")
+            print("ERROR: "+str(e))
+        log.critical("ToDo: add verification to individual entries")
+    else:
+        print("aborting...")
 
 def buildListOfListsWithTodoProperties(listOfTodos,PropertiesToExtract,descriptionLimiter):
     # returns something like that: (todo: come up with better comment)
@@ -42,6 +95,207 @@ def buildListOfListsWithTodoProperties(listOfTodos,PropertiesToExtract,descripti
                 TodoPropertiesList.append(getattr(todo,myproperty))
         ListOfLists.append(TodoPropertiesList)
     return ListOfLists
+
+def sortTodos(todos,reverse_arg=False,*sort_by):
+
+    """
+    :param todos:
+    :param sort_by: ID, rawline, priority urgency status createDate finishDate dueDate description contexts projects size recurring
+    :return:
+    """
+    # reverse arguments. last one must go first
+    # this is done by starting with the length -1, going to 0, by stepping -1
+    for i in range(len(sort_by)-1,-1,-1):
+        try:
+            todos.sort(key=lambda x: getattr(x, sort_by[i]), reverse=reverse_arg)
+        except Exception as e:
+            pass
+            #print(e,sort_by[i])
+    return todos
+
+def listAllContexts(todo_list):
+    log.debug("in function listAllContexts()")
+    context_dict = {}
+    for todo in todo_list:
+        if todo.contexts:
+            for context in todo.contexts:
+                #context_list.append(context)
+                if context not in context_dict:
+                    context_dict[context] = 1
+                else:
+                    context_dict[context] +=1
+    #implement sorting. but dicts are hairy to sort. find an elegant way
+    # maybe create a list of tuples
+    log.info("sorting dictionary")
+    sorted_list_from_dict = sorted(context_dict.items(), key=itemgetter(1), reverse=True)
+    sorted_dict = {}
+    for tuple in sorted_list_from_dict:
+        log.debug(type(tuple))
+        log.debug(tuple[0])
+        log.debug(tuple[1])
+        sorted_dict[tuple[0]] = tuple[1]
+    log.debug(sorted_dict)
+    return sorted_dict
+
+def listByContext(todo_list, journal_list, info_list, context, connect=False):
+
+    log.debug("in function listByContext")
+    result = []
+    context = "".join(["@",context])
+    for todo in todo_list:
+        try:
+            if context in todo.contexts:
+                result.append(todo)
+        except Exception as e:
+            pass
+    if connect is False:
+        return result
+    # this will only be executed if mode is 'connect=True'
+    else:
+        result = buildConnectionTable(result, context, journal_list, info_list)
+        return result
+
+def listByLabel(todo_list, label, journal_list = [], info_list = [], connect=False):
+    log.info("in function listByLabel() with label "+label+" and connect flag "+str(connect))
+    result = []
+    label = "".join(["+",label])
+    for todo in todo_list:
+        try:
+            log.debug("in for loop within todo_list, looking for label "+label+" in property Todo.projects")
+            if label in todo.projects:
+                log.debug("label "+label+" found, appending entire object to list result")
+                result.append(todo)
+        except Exception as e:
+            log.debug("encountered error in listByLabel")
+            pass
+    result = sortTodos(result,"status","urgency","priority","createDate")
+    if connect is False:
+        return result
+    # this will only be executed if mode is 'connect=True'
+    else:
+        result = buildConnectionTable(result, label, journal_list, info_list)
+        return result
+
+def listAllLabels(todo_list, drawtable):
+    log.debug("in function listAllLabels")
+    labels_list = []
+    for todo in todo_list:
+        if todo.projects:
+            for label in todo.projects:
+                labels_list.append(label)
+    labels_list = set(labels_list)
+    labels_list = sorted(labels_list)
+    return labels_list
+
+def listByStatus(todo_list, status):
+    log.debug("in function listByStatus")
+    result_list = []
+    for todo in todo_list:
+        try:
+            if todo.status == status:
+                result_list.append(todo)
+        except Exception as e:
+            print("Error", e, vars(todo))
+    log.info("returning result list from listByStatus()")
+    return result_list
+
+def listBySize(todo_list, size,status):
+    log.debug("listing by size")
+    result_list = []
+    for todo in todo_list:
+        try:
+            if todo.size == size and todo.status in status:
+                result_list.append(todo)
+        except Exception as e:
+            log.info("listing by size failed due to :"+e)
+    log.info("list by size "+size+" resulted in "+str(len(result_list))+" results")
+    return result_list
+
+def listByPrio(prio,todo_list,status = "open"):
+    log.debug("in function listByPrio")
+    if not status: status = input("status open or done\n")
+    prio = "("+prio+")"
+    prioTodos = []
+    for todo in todo_list:
+        try:
+            if todo.priority == prio and todo.status == status:
+                prioTodos.append(todo)
+        except Exception as e:
+            print("Error", e)
+    return prioTodos
+
+def listByUrgency(todo_list, urgency):
+    global config
+    log.debug("in function listByUrgency")
+    status = "open" #input("status open or done\n")
+    urgency_todos = []
+    for todo in todo_list:
+        try:
+            if todo.urgency == urgency and todo.status == status:
+                urgency_todos.append(todo)
+        except Exception as e:
+            print("Error", e)
+    return urgency_todos
+
+def listByManualQuery(queryObj,todo_list):
+    global config
+    log.debug("in function byManualQuery")
+    result_list = []
+    for todo in todo_list:
+        # these are 'and' relations. 'OR' is not in yet
+        if todo.priority in queryObj.priority:
+            if todo.status in queryObj.status:
+                if todo.urgency in queryObj.urgency:
+                    result_list.append(todo)
+        else:
+            pass
+    return result_list
+
+def connected_list(todo_list, journal_list, info_list,labels_or_contexts):
+    # this will be returned
+    todo_list_filtered = []
+    # adapt journal and infos a bit first
+    for item in journal_list:
+        item.priority = "Journal"
+        item.urgency = ""
+        item.status = ""
+    for item in info_list:
+        item.priority = "Info"
+        item.urgency = ""
+        item.status = ""
+    # pre-sorting lists before merging
+    # todos don't necessarily have createDates. sorting on those will raise exception
+    try:
+        todo_list_sorted = sortTodos(todo_list, "createDate")
+    except TypeError as e:
+        print("couldn't sort because of: ",str(e))
+        log.error("couldn't sort because of: ",str(e))
+    journal_list_sorted = sortTodos(journal_list,"createDate")
+    info_list_sorted = sortTodos(info_list,"createDate")
+    # merging lists
+    uber_list = todo_list_sorted+journal_list_sorted+info_list_sorted
+    def getAllContextsAndProjects(entry):
+        listOfContextsAndProjects = []
+        try:
+            for project in entry.projects:
+                listOfContextsAndProjects.append(project[1:])
+            for context in entry.contexts:
+                listOfContextsAndProjects.append(context[1:])
+        except TypeError:
+            # entry did not have projects or contexts set
+            pass
+        return listOfContextsAndProjects
+    for l_or_c in labels_or_contexts.split(" "):
+        for entry in uber_list:
+            listOfContextsAndProjects = getAllContextsAndProjects(entry)
+            # stripping the '+' and '@' from the attributes projects (label) and context
+            if l_or_c in listOfContextsAndProjects:
+                todo_list_filtered.append(entry)
+    # removing duplicates
+    todo_list_unique = set(todo_list_filtered)
+    todo_list_filtered_unique = list(todo_list_unique)
+    todo_list_final = sortTodos(todo_list_filtered_unique,"createDate")
+    return todo_list_final
 
 def buildConnectionTable(result,context_or_label,journal_list,info_list):
     log.info("noodling through jounnal_list, looking for " + context_or_label + " and cleaning table fields")
@@ -70,156 +324,3 @@ def buildConnectionTable(result,context_or_label,journal_list,info_list):
             pass
     log.info("done, returning resultlist of length " + str(len(result)))
     return result
-
-def writeMenu_list(todo_list):
-    list = input(
-        "*  list all (c)ontexts\n"
-        "*  list by context (lc)\n"
-        "*  list all (l)abels\n"
-        "*  list by label (ll)\n"
-        "*  list by status (ls)\n"
-        "*  list by size (size)\n"
-        "*  list by prio (lp)\n"
-        "*  list by query (lq)\n"
-        "*  list by urgency (u)\n"
-        "*  list today, this week, this month this year (TODO)\n"
-        "*  list by big Goals (TODO)\n"
-        "*  added last n days (a <days>)\n"
-        "*  resolved last n days (r <days>)\n\n"
-        "*  eisenhower (e)\n")
-    # -------------------------------------------------------------------------------------------#
-    if list == 'contexts' or list == 'c':
-        log.debug("listing all contexts")
-        context_dict = tdt.listAllContexts(todo_list)
-        log.debug("content of context dict")
-        log.debug(type(context_dict))
-        log.info("building table object")
-        newTable = Classes.TableObj()
-        newTable.numOfCols = 2
-        newTable.colHeaders = ["context", "count"]
-        newTable.content = context_dict
-        table.tableFromTableObj(newTable, True)
-    # -------------------------------------------------------------------------------------------#
-    elif list.startswith("lq"):
-        print("something like u=1,2 p=a,b s=o|d")
-        query = list.replace("lq ", "")
-        query = query.split(" ")
-        myQuery = Classes.Query(query)
-        filtered_list = tdt.byManualQuery(myQuery,todo_list)
-        table.resultTable(filtered_list)
-    # -------------------------------------------------------------------------------------------#
-    elif list == 'eisenhower' or list == 'e':
-        tdt.eisenhower(todo_list)
-    # -------------------------------------------------------------------------------------------#
-    elif list == 'labels' or list == 'l':
-        log.warning("todolist id is " + str(id(todo_list)))
-
-        tdt.listAllLabels(todo_list,True)
-    # -------------------------------------------------------------------------------------------#
-    elif list == 'ls context' or list == 'lc':
-        context = input('context without @ but accurate cases\n')
-        try:
-            result = tdt.listByContext(todo_list,context)
-            table.resultTable(result)
-            print("number of hits:"+str(len(result)))
-        except Exception as e:
-            print(e)
-    # -------------------------------------------------------------------------------------------#
-    elif list == 'll' or list == 'ls label':
-        label = input('label without +, but accurate cases\n')
-        try:
-            result = tdt.listByLabel(todo_list, label)
-            table.resultTable(result)
-        except Exception as e:
-            print(e)
-    # -------------------------------------------------------------------------------------------#
-    elif list == 'size':
-        size = input('xs,s,m,l,xl,xxl\n').upper()
-        status = input('open or done. or "all"\n')
-        if status == "": status = 'open'
-        if status == "all": status = ['open','done']
-        try:
-            result = tdt.listBySize(todo_list,size,status)
-            table.resultTable(result)
-        except Exception as e:
-            print(e)
-    # -------------------------------------------------------------------------------------------#
-    elif list == "status" or list == 'ls':
-        log.debug("running with option list->status (ls)")
-        status = input("status. 'open' or 'done'\n")
-        log.debug("calling listByStatus(status) with status " + status)
-        result = tdt.listByStatus(status,todo_list)
-        log.debug("result is set to" + str(len(result)))
-        table.resultTable(result)
-    # -------------------------------------------------------------------------------------------#
-    elif list == "ls prio" or list == 'lp':
-        prio = input("a-z\n")
-        table.resultTable(tdt.listByPrio(prio.upper(),todo_list))
-    # -------------------------------------------------------------------------------------------#
-    elif list == "urgency" or list == 'u':
-        urgency = input("1-3\n")
-        table.resultTable(tdt.listByUrgency(urgency,todo_list))
-    # -------------------------------------------------------------------------------------------#
-    elif list.startswith("r"):
-        log.debug('chose resolved within days')
-        try:
-            days = int(list.split(" ")[1])
-        except IndexError:
-            log.warning('invalid input, setting to 0 (today)')
-            days = 0
-        # the old, static way of building a table
-        # resultTable(resolvedWithinDays(days))
-
-        # testing building the same with tableobj
-        table_content = tdt.resolvedWithinDays(days,todo_list)
-        table_content = sortTodos(table_content,"finishDate","urgency","priority")
-
-        resolved_table = Classes.TableObj()
-        resolved_table.width = 300
-        resolved_table.numOfCols = 9
-        resolved_table.colHeaders = ["ID", "P", "U", "Created", "Resolved", "Description", "Context", "Tags", "Size"]
-        propertiesToExtract = ["ID", "priority", "urgency", "createDate", "finishDate", "description", "contexts",
-                               "projects", "size"]
-
-        resolved_table.content = buildListOfListsWithTodoProperties(table_content, propertiesToExtract, resolved_table.descriptionLimiter)
-        table.tableFromTableObj(resolved_table, True)
-
-        log.info('done. returning to menu')
-    # -------------------------------------------------------------------------------------------#
-
-    elif list.startswith("a"):
-        # todo simplify and merge with resolved
-        log.debug('chose added within days')
-        try:
-            days = int(list.split(" ")[1])
-        except IndexError:
-            log.warning('invalid input, setting to 0 (today)')
-            days = 0
-
-        # testing building the same with tableobj
-        table_content = tdt.addedWithinDays(days,todo_list)
-        table_content = sortTodos(table_content,"createDate","urgency","priority")
-
-        added_table = Classes.TableObj()
-        added_table.width = 300
-        added_table.numOfCols = 9
-        added_table.colHeaders = ["ID", "P", "U", "Created", "Resolved", "Description", "Context", "Tags", "Size"]
-        propertiesToExtract = ["ID", "priority", "urgency", "createDate", "finishDate", "description", "contexts",
-                               "projects", "size"]
-
-        added_table.content = buildListOfListsWithTodoProperties(table_content, propertiesToExtract, added_table.descriptionLimiter)
-        table.tableFromTableObj(added_table, True)
-
-        log.info('done. returning to menu')
-
-def sortTodos(todos,*sort_by):
-
-    #print("number of arguments "+str(len(sort_by))+str(sort_by))
-    # reverse arguments. last one must go first
-    # this is done by starting with the length -1, going to 0, by stepping -1
-    for i in range(len(sort_by)-1,-1,-1):
-        todos.sort(key=lambda x: getattr(x, sort_by[i]), reverse=False)
-        #print("sorted by",sort_by[i])
-        #for todo in todos:
-        #    print(todo.rawline)
-    return todos

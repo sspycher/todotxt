@@ -98,6 +98,7 @@ class Config:
         self.todotxt = ""
         self.infotxt = ""
         self.journaltxt = ""
+        self.exports = ""
         self.setpaths()
 
     def setpaths(self):
@@ -107,3 +108,4 @@ class Config:
             self.todotxt = lines[0].split(":")[1].strip()
             self.infotxt = lines[2].split(":")[1].strip()
             self.journaltxt = lines[1].split(":")[1].strip()
+            #self.exports = lines[3].split(":")[1].strip()

@@ -1,6 +1,8 @@
 import text2table
+import Classes
 import logging as log
-import sys
+
+config = Classes.Config()
 
 
 def tableFromTableObj(tableObj, draw = True):
@@ -61,8 +63,8 @@ def resultTable(result_todo_list,limiter=100,returnTable = False, width=0):
 def exportThis(result):
     log.debug("in tableoutput.py, function exportThis()")
     table = resultTable(result,10000,True)
-    path = "../../Lists2/Files/"
-    filename = input("exporting to: ../../List2/Files/\nenter file name\n")
+    path = config.exports
+    filename = input("exporting to: "+config.exports+"\nenter file name\n")
     with open("".join([path,filename]),"w") as out:
         log.info("exporting to:"+path+filename)
         for line in table._rows:
