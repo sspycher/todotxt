@@ -2,8 +2,9 @@ import unittest
 from tdt import *
 import helpers
 import Todo
-import tableoutput
+import tableoutput as table
 import Classes
+import text2table
 
 
 class TdtTest(unittest.TestCase):
@@ -26,31 +27,31 @@ class TdtTest(unittest.TestCase):
 
     def test_listAllLabelsLength(self):
         global todo_list
-        myVal = listAllLabels(todo_list,False)
+        myVal = helpers.listAllLabels(todo_list,False)
         self.assertEqual(len(myVal),2)
 
     def test_listAllContextsLength(self):
         global todo_list
-        myVal = listAllContexts(todo_list)
+        myVal = helpers.listAllContexts(todo_list)
         self.assertEqual(len(myVal),2)
 
     def test_labelsStartWithPlus(self):
         global todo_list
-        extractedLabels = listAllLabels(todo_list, False)
+        extractedLabels = helpers.listAllLabels(todo_list, False)
         for string in extractedLabels:
             self.assertEqual(string[0:1],"+")
 
     def test_listAllLabelsObjTypes(self):
         global todo_list
         label_list = ["+label1","+label2"]
-        tables = labelTable(label_list, False)
+        tables = helpers.labelTable(label_list, False)
         self.assertIsInstance(tables,list)
         for table in tables:
             self.assertIsInstance(table,text2table.Texttable)
 
     def test_listByLabel(self):
         #global todo_list
-        result = listByLabel(todo_list, "WTF")
+        result = helpers.listByLabel(todo_list, "WTF")
         self.assertEqual(result[0].projects[0],'+WTF')
 
     def test_buildConnectionTable(self):
@@ -66,14 +67,14 @@ class TdtTest(unittest.TestCase):
             info_list.append(new_obj)
 
         # fetch all todos with context Testing
-        result_context = listByContext(todo_list, "Testing")
+        result_context = helpers.listByContext(todo_list, "Testing")
         # connect those todos with content from info and journal
         # must have 3 elements
         connected_contexts = helpers.buildConnectionTable(result_context, "@Testing", journal_list, info_list)
         self.assertEqual(len(connected_contexts),3)
 
         # fetch all todos with label WTF
-        result_label = listByLabel(todo_list, "WTF")
+        result_label = helpers.listByLabel(todo_list, "WTF")
         # connect / enrich those todos with content from info and journal
         connected_labels = helpers.buildConnectionTable(result_label, "+WTF", journal_list, info_list)
         self.assertEqual(len(connected_labels),3)
@@ -104,7 +105,7 @@ class TdtTest(unittest.TestCase):
         tableObj.content = [["content col 1","content col2"]]
         tableObj.numOfCols = 2
         tableObj.width = 0
-        resultTable = tableoutput.tableFromTableObj(tableObj,False)
+        resultTable = helpers.tableoutput.tableFromTableObj(tableObj,False)
         self.assertEqual(resultTable._rows[0][0],"Col1")
         self.assertEqual(resultTable._rows[1][1],"content col2")
 
@@ -206,7 +207,7 @@ class TdtTest(unittest.TestCase):
         # list by prio (lp)
         # ---------------------------------------------------------------
         prio = "Z"
-        todos_filtered = listByPrio(prio, todo_list)
+        todos_filtered = helpers.listByPrio(prio, todo_list)
         self.assertEqual(todos_filtered[0].priority, "(Z)")
         self.assertEqual(len(todos_filtered),1)
 

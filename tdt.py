@@ -328,7 +328,7 @@ def writeMenu_main(todo_list, in_test_mode=False, menu_option=""):
     else:
         entry = menu_option
 
-    def processChoice(entry):
+    def processChoice(todo_list,entry):
         # -------------------------------------------------------------------------------------------#
         if entry == 'exit' or entry == 'e':
             log.info("----------------- user exit ------------------")
@@ -346,7 +346,7 @@ def writeMenu_main(todo_list, in_test_mode=False, menu_option=""):
             writeMenu_list(todo_list)
             writeMenu_main(todo_list,False,"l")
         elif entry == 'add' or entry == 'a':
-            helpers.addTodo(todo_list)
+            todo_list = helpers.addTodo(todo_list)
             writeMenu_main(todo_list)
         else:
             # continue with rest of list choices
@@ -380,7 +380,7 @@ def writeMenu_main(todo_list, in_test_mode=False, menu_option=""):
 
     # -------------------------------------------------------------------------------------------#
 
-    processChoice(entry)
+    processChoice(todo_list, entry)
     # ----------  move up to process choice all below -------------------------------------------#
     if entry == 'options' or entry == 'o':
         option = input("*  rebuild (r)\n"

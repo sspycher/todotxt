@@ -47,6 +47,7 @@ def addTodo(todo_list):
     log.debug("in function addTodo()")
     rawline = addTodo_CollectContent()
     log.info("now building new ToDo")
+    new_todo = ""
 
     confirm_todo = input("do you want to save\n\n   "+rawline+"\ny/n?\n")
     if confirm_todo == 'y':
@@ -70,6 +71,7 @@ def addTodo(todo_list):
             todo_list = sortTodos(todo_list,False, "status", "urgency", "priority")
             log.info("saving new todo list")
             tdt.save_state(todo_list)
+            return todo_list
         except Exception as e:
             log.error("something went wrong while saving file")
             print("ERROR: "+str(e))
