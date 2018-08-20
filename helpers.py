@@ -272,10 +272,8 @@ def connected_list(todo_list, journal_list, info_list,labels_or_contexts):
     except TypeError as e:
         print("couldn't sort because of: ",str(e))
         log.error("couldn't sort because of: ",str(e))
-    journal_list_sorted = sortTodos(journal_list,"createDate")
-    info_list_sorted = sortTodos(info_list,"createDate")
     # merging lists
-    uber_list = todo_list_sorted+journal_list_sorted+info_list_sorted
+    uber_list = todo_list+journal_list+info_list
     def getAllContextsAndProjects(entry):
         listOfContextsAndProjects = []
         try:
@@ -296,7 +294,7 @@ def connected_list(todo_list, journal_list, info_list,labels_or_contexts):
     # removing duplicates
     todo_list_unique = set(todo_list_filtered)
     todo_list_filtered_unique = list(todo_list_unique)
-    todo_list_final = sortTodos(todo_list_filtered_unique,"createDate")
+    todo_list_final = sortTodos(todo_list_filtered_unique,True, "createDate")
     return todo_list_final
 
 def buildConnectionTable(result,context_or_label,journal_list,info_list):
