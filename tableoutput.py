@@ -64,9 +64,9 @@ def exportThis(result):
     log.debug("in tableoutput.py, function exportThis()")
     table = resultTable(result,10000,True)
     path = config.exports
-    filename = input("exporting to: "+config.exports+"\nenter file name\n")
+    filename = input("exporting to: %s \nenter file name\n" % path)
     with open("".join([path,filename]),"w") as out:
-        log.info("exporting to:"+path+filename)
+        log.info("WWWWWW exporting to: %s %s" % (path,filename))
         for line in table._rows:
             try:
                 out.write(";".join(line)+"\n")

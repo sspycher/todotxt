@@ -9,3 +9,7 @@ debug.log
 *.pyc
 *.log
 .idea/workspace.xml
+.idea/workspace.xml
+*.pyc
+*.log
+*.csv
