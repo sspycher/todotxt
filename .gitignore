@@ -13,3 +13,4 @@ debug.log
 *.pyc
 *.log
 *.csv
+.idea/workspace.xml
